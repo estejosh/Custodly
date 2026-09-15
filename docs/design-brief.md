@@ -13,7 +13,7 @@ used.
 
 An n8n automation + local client that, on request, acquires a new
 secret/API key from a provider and drops it directly into a secrets keeper
-(KeePassXS, hosted on a Ferryman box) — never through a chat log or an
+(KeePassXC, hosted on a Ferryman box) — never through a chat log or an
 agent's context. An agent supervises the system (does it still work, is it
 minting the right scope, is expiry tracked) but the acquisition itself runs
 through deterministic automation, not an agent driving the action live.
