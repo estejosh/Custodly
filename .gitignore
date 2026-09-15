@@ -1,0 +1,10 @@
+# Secrets — never committed, ever
+*.kdbx
+*.kdbx.bak
+*.kdbx-*
+.env
+.env.*
+*.pem
+*.key
+secrets/
+vault/
