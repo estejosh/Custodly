@@ -19,8 +19,8 @@ ever leaving the master store. Worth sanity-checking against GitHub's
 current App docs before building — verify nothing's changed there.
 
 Chosen because GitHub is already the heaviest-used provider across the
-portfolio (estejosh repos, Ferryman, Redaktly), so it's real usage from
-day one rather than a synthetic test case.
+portfolio, so it's real usage from day one rather than a synthetic test
+case.
 
 ## Vault mechanism: keepassxc-cli, two .kdbx files
 

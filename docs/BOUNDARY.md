@@ -9,13 +9,13 @@ access, transports, and seals at rest. Neither reimplements the other.
 agent on this box reads it freely — that's fine as long as "everyone with
 access to this box" and "everyone Custodly trusts" are the same set,
 which is true for a single operator and stops being true the moment a
-second person exists. David is already onboarded, so it's already false.
+second person is granted access to anything on that box.
 
 **Anything crossing a person or machine boundary goes through Ferryman**,
 sealed for that recipient, with Ferryman's grants — not Custodly — deciding
 who can open it. Custodly hands Ferryman a sealed secret plus a scope
-label. Ferryman decides who sees it. Custodly never learns who David is.
-Ferryman never learns how to talk to Stripe.
+label. Ferryman decides who sees it. Custodly never learns who the
+recipient is. Ferryman never learns how to talk to Stripe.
 
 ## Contract — `boundary/v1`
 
@@ -40,7 +40,7 @@ other than the local operator).
   (0/1/2, Custodly's own scoring result — informational to Ferryman, not
   re-derived by it), `acquired_via` (`track1_api` | `track2_recipe`),
   `expires_at`, `acquired_at`, `label` (short human string for Ferryman's
-  dashboard, e.g. "GitHub App install token, redaktly repo, read+PR").
+  dashboard, e.g. "GitHub App install token, pilot repo, read+PR").
   Never the plaintext secret or anything it could be reconstructed from.
 - `receipt` — `deposit_id`, `accepted_at`, `contract_version`. No secret
   or key material comes back. This is Custodly's own proof that custody
