@@ -25,9 +25,9 @@ install and vault creation are the current blocker — see mvp-scope.md.
 
 ## License
 
-[![License: UFL-1.0](https://img.shields.io/badge/license-UFL--1.0-blue)](https://github.com/estejosh/UFL-Usufruct-License)
+[![License: UFL-1.1](https://img.shields.io/badge/license-UFL--1.1-blue)](https://github.com/estejosh/UFL-Usufruct-License)
 
-[The Usufruct License (UFL) v1.0](https://github.com/estejosh/UFL-Usufruct-License) —
+[The Usufruct License (UFL) v1.1](https://github.com/estejosh/UFL-Usufruct-License) —
 source-available, not OSI open source: free to use at any scale, license
 required only to redistribute a modified version or fold the source into
 another distributed product. Full terms in `LICENSE.md`.
