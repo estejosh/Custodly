@@ -1,11 +1,11 @@
-# Custodly is licensed under the Usufruct License (UFL) v1.0
+# Custodly is licensed under the Usufruct License (UFL) v1.1
 
 Canonical license text, whitepaper, and FAQ:
 https://github.com/estejosh/UFL-Usufruct-License
 
 ---
 
-The Usufruct License (UFL) — Version 1.0
+The Usufruct License (UFL) — Version 1.1
 
 Copyright (c) 2026 Joshua D. Hale
 
@@ -21,7 +21,8 @@ interfaces, and operating a product or service built on top of it.
 ## 2. Reserved Rights
 
 The following rights are reserved to the Licensor and are NOT granted by
-Section 1. They require a separate written license from the Licensor:
+Section 1. They require a separate written license from the Licensor,
+except as Section 2A permits:
 
   (a) Distributing the Software, or any modified version, fork, or
       substantially similar reimplementation of it, to any third party,
@@ -32,6 +33,28 @@ Section 1. They require a separate written license from the Licensor:
   (c) Using the Licensor's name, marks, or claims of compatibility
       ("Custodly-compatible," "built on Custodly," etc.) in connection
       with a distributed derivative.
+
+## 2A. Forks of Decentralized or Network Software
+
+If the Software is designed to run as a node, client, or peer in a
+decentralized network, blockchain, or similar peer-to-peer protocol,
+Section 2(a) does not require a separate license for distributing a
+modified version, fork, or independent reimplementation of it —
+including to operate a competing network — provided the distributed
+work:
+
+  (i) prominently and accurately credits Custodly as the origin of the
+      Software or protocol, in its README, whitepaper, or equivalent
+      primary documentation; and
+  (ii) keeps the canonical-source notice required by Section 7 intact.
+
+Distributing a fork that removes, obscures, or falsifies this
+attribution is not permitted under this exception and still requires a
+separate license under Section 2(a). This section does not affect
+Sections 2(b) or 2(c): incorporating the Software into another
+distributed product, and using the Licensor's name or marks to claim
+compatibility, still require a separate license regardless of
+attribution.
 
 ## 3. Why "Usufruct"
 
@@ -63,5 +86,15 @@ rights, which Section 2 intentionally withholds. The source is public
 and free to use at any scale; only redistributing Custodly's own source
 requires a license.
 
+## 7. Notice
+
+The canonical-source line at the top of this license text (or an
+equivalent pointer to https://github.com/estejosh/UFL-Usufruct-License)
+must be kept intact when this license text is copied into another
+project. This is a notice requirement on the license text itself, not a
+condition on using the Software — Section 1's grant is unconditional.
+
 ---
-SPDX-style identifier: UFL-1.0
+SPDX identifier: UFL is not on the official SPDX license list. Per SPDX
+convention for licenses outside that list, use `LicenseRef-UFL-1.1` —
+not a bare `UFL-1.1`, which would misrepresent it as SPDX-registered.
