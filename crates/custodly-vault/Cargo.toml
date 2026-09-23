@@ -1,0 +1,18 @@
+[package]
+name = "custodly-vault"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "KeePassXC-backed vault client (working.kdbx / master.kdbx via keepassxc-cli)"
+
+[dependencies]
+custodly-core = { path = "../custodly-core" }
+anyhow = { workspace = true }
+keyring = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+rand = { workspace = true }
+
+[lints]
+workspace = true

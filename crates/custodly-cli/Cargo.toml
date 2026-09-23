@@ -1,0 +1,23 @@
+[package]
+name = "custodly-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Custodly command-line entry point -- not implemented yet, see docs/mvp-scope.md"
+
+[[bin]]
+name = "custodly"
+path = "src/main.rs"
+
+[dependencies]
+custodly-core = { path = "../custodly-core" }
+clap = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+axum = { workspace = true }
+
+[lints]
+workspace = true

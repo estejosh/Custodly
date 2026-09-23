@@ -1,0 +1,7 @@
+# Pinned to what's actually installed on beastly (1.90), not ferryman's 1.97 --
+# raise deliberately together with ferryman's pin if/when there's a reason to,
+# not as a side effect of a dependency bump. See ferryman's own rust-toolchain.toml
+# for the reasoning behind pinning at all.
+[toolchain]
+channel = "1.90"
+components = ["rustfmt", "clippy"]

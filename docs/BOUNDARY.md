@@ -31,11 +31,24 @@ leave the local machine (any Tier 2 grant, or any grant meant for someone
 other than the local operator).
 
 - `sealed_secret` — ciphertext, sealed by Custodly to Ferryman's
-  project-scoped ingestion key (not to any individual's identity key —
-  Custodly doesn't hold or know individual keys). Ferryman opens it once
-  under its own sealing (PBKDF2-SHA256 600k, XChaCha20-Poly1305) and
-  re-seals per recipient only at grant time, using machinery it already
-  has.
+  project-scoped **ingestion identity** (not to any individual's identity
+  key — Custodly doesn't hold or know individual keys). This identity did
+  not pre-exist; it is a project-scoped `secrets::EncryptionIdentity` added
+  specifically to receive deposits (`ferryman_channel::boundary::ingestion_identity`),
+  stored under the project's unsynced attachment directory, never in the
+  synced channel folder and never in the human roster. Ferryman opens the
+  deposit once, under that identity, using the same X25519-ECDH /
+  HKDF-SHA256 / XChaCha20-Poly1305 construction `secrets::set_secret`
+  already uses to seal to a named recipient (`boundary::open_deposit`,
+  built on a new `secrets::open_slot` primitive factored out of that
+  existing code — not a second construction), and re-seals per recipient
+  only at grant time via the existing `secrets::set_secret`. Both sides'
+  code now exists: `ferryman-channel/src/boundary.rs` (open) and
+  `custodly-core/src/seal.rs` (seal) — mirrored by reading, not by a shared
+  crate or a cross-repo test yet, so treat the pairing as unverified until
+  an integration test seals on one side and opens on the other.
+  *(Corrected 2026-09-21 — the original text here said "PBKDF2-SHA256
+  600k", which nothing in Ferryman's code does; see `START-HERE.md`.)*
 - `metadata` — `provider`, `scope` (provider-native scope string), `tier`
   (0/1/2, Custodly's own scoring result — informational to Ferryman, not
   re-derived by it), `acquired_via` (`track1_api` | `track2_recipe`),
@@ -65,6 +78,31 @@ instance — without reimplementing the scoring model, which is Custodly's.
   user model, or a sync mechanism, that's the wrong repo for it.
 - Ferryman never gets a provider adapter, a recipe, or scope-classification
   logic — it only sees `deposit()` calls and answers `policy()` queries.
+
+## What's implemented vs. still open (as of 2026-09-21)
+
+Implemented, in each repo's own crate, with unit tests but no cross-repo
+integration test yet:
+- Ferryman: `ferryman-channel::boundary` — the ingestion identity, opening a
+  deposit, and the receipt type. Not wired into any HTTP route (or any
+  other transport) yet.
+- Custodly: `custodly-core::seal` and `custodly-core::contract` — sealing a
+  value to a given recipient public key, and the wire types
+  (`DepositMetadata`, `SealedSecret`, `DepositReceipt`, `PolicyResponse`).
+
+Still genuinely open, not just unimplemented:
+- **How Custodly learns the ingestion identity's public key for a given
+  project.** `deposit()` cannot be called end to end until this is
+  answered — it is a discovery question, not a crypto one.
+- **`policy()`'s transport.** Custodly runs no listener of any kind yet —
+  no HTTP server, no CLI subcommand wired up, nothing n8n could call
+  either. The payload shape (`PolicyResponse`) is fixed; how Ferryman
+  reaches it is not decided.
+- **`deposit()`'s transport on the Ferryman side.** `ferryman-server`
+  exposes `/v1/...` routes over axum for everything else; a `boundary/v1`
+  route has not been added there. Given this crosses a real trust
+  boundary, that wiring should get read carefully (ideally build-tested)
+  before it lands, not added blind.
 
 ## When the boundary hurts
 

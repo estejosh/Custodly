@@ -1,0 +1,58 @@
+[workspace]
+members = [
+  "crates/custodly-core",
+  "crates/custodly-vault",
+  "crates/custodly-github",
+  "crates/custodly-cli",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "LicenseRef-UFL-1.1"
+repository = "https://github.com/estejosh/Custodly"
+
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "2.0"
+clap = { version = "4.5", features = ["derive", "env"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+# Same backend Ferryman already depends on for its own OS-keystore-backed secrets --
+# deliberately reused rather than a second mechanism for the same job.
+keyring = { version = "3.6", features = ["windows-native", "apple-native", "sync-secret-service"] }
+rand = "0.10"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+hex = "0.4"
+# The `boundary/v1` sealing construction in `custodly-core::seal` mirrors
+# Ferryman's `ferryman-channel/src/secrets.rs` exactly -- same crates, same
+# versions, so the two constructions cannot drift apart on a dependency bump
+# alone. See `docs/BOUNDARY.md`.
+chacha20poly1305 = "0.11"
+hkdf = "0.13"
+sha2 = "0.11"
+x25519-dalek = { version = "3", features = ["static_secrets"] }
+# `custodly-core::server` runs `policy()` (see `docs/BOUNDARY.md`) and
+# `custodly-core::client` calls Ferryman's `boundary/v1` routes -- same
+# versions Ferryman itself pins, so the two sides of one HTTP contract are
+# not exercised by two different major versions of axum/reqwest in testing.
+# custodly-github: signs the GitHub App JWT used to mint installation
+# access tokens (docs/mvp-scope.md, "Track 1 pilot"). v10 dropped an
+# implicit default crypto backend -- `rust_crypto` picks the pure-Rust
+# signer explicitly, matching the rest of the workspace's pure-Rust
+# crypto choices (chacha20poly1305, x25519-dalek) over pulling in openssl.
+jsonwebtoken = { version = "10", features = ["rust_crypto"] }
+axum = { version = "0.8", features = ["macros", "json"] }
+tokio = { version = "1.47", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tower = "0.5"
+http-body-util = "0.1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }

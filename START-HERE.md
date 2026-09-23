@@ -20,7 +20,17 @@ Ferryman (github.com/estejosh/ferryman) already owns, and already ships:
   for them
 - transport - a Syncthing-carried channel that moves files between machines
   with no server in the middle and nothing that phones home
-- sealing at rest - PBKDF2-SHA256 at 600,000 iterations, XChaCha20-Poly1305
+- sealing at rest - a secret sealed to one recipient's X25519 public key:
+  X25519 ECDH, HKDF-SHA256 (salted with both public keys, per RFC 7748 -
+  never the raw ECDH output directly), XChaCha20-Poly1305
+  (`ferryman-channel/src/secrets.rs`). Corrected 2026-09-21: earlier
+  drafts of this file said "PBKDF2-SHA256 at 600,000 iterations" - there is
+  no PBKDF2 anywhere in Ferryman's code; that claim was never checked
+  against the actual crate. There is also no "project-scoped ingestion
+  key" primitive pre-existing to seal to - that had to be added
+  (`boundary::ingestion_identity`, a project-scoped
+  `secrets::EncryptionIdentity`) rather than reused as-is. See
+  `docs/BOUNDARY.md`.
 - the human interface - a dashboard, because end users never touch a CLI
 
 Custodly owns: provider adapters, the recipes, the scoring model, the

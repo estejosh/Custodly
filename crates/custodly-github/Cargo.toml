@@ -1,0 +1,21 @@
+[package]
+name = "custodly-github"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Track 1 pilot (docs/mvp-scope.md): mints short-lived GitHub App installation access tokens"
+
+[dependencies]
+custodly-core = { path = "../custodly-core" }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+jsonwebtoken = { workspace = true }
+
+[lints]
+workspace = true

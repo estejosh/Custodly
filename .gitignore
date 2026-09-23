@@ -8,3 +8,6 @@
 *.key
 secrets/
 vault/
+
+# Rust build output
+/target
