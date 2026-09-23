@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Custodly command-line entry point -- not implemented yet, see docs/mvp-scope.md"
+description = "Custodly command-line entry point -- not a shipped end-user CLI, see src/main.rs"
 
 [[bin]]
 name = "custodly"
@@ -12,12 +12,16 @@ path = "src/main.rs"
 
 [dependencies]
 custodly-core = { path = "../custodly-core" }
+custodly-vault = { path = "../custodly-vault" }
+custodly-github = { path = "../custodly-github" }
 clap = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 axum = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
 
 [lints]
 workspace = true

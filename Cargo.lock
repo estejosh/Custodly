@@ -491,8 +491,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "chrono",
  "clap",
  "custodly-core",
+ "custodly-github",
+ "custodly-vault",
+ "reqwest",
  "tokio",
  "tracing",
  "tracing-subscriber",
