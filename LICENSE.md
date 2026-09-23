@@ -1,22 +1,35 @@
-# Custodly is licensed under the Usufruct License (UFL) v1.1
+# Custodly is licensed under the Usufruct License (UFL) v2.1
 
 Canonical license text, whitepaper, and FAQ:
 https://github.com/estejosh/UFL-Usufruct-License
 
 ---
 
-The Usufruct License (UFL) — Version 1.1
+The Usufruct License (UFL) — Version 2.1
 
 Copyright (c) 2026 Joshua D. Hale
 
+Operational Scope: Unconditional
+
 ## 1. Grant of Use
 
-Subject to the terms below, the Licensor grants anyone the free,
-perpetual, worldwide right to use the Software — in source or compiled
-form, for any purpose, including commercial purposes, at any scale —
-without payment or a separate license. This includes running the
-Software, deploying it, integrating with it through its published
-interfaces, and operating a product or service built on top of it.
+Subject to the terms below and the Operational Scope declared above,
+the Licensor grants anyone the free, perpetual, worldwide right to use
+the Software — in source or compiled form, at any scale — without
+payment or a separate license beyond what Section 1A requires. This
+includes running the Software, deploying it, integrating with it
+through its published interfaces, and operating a product or service
+built on top of it, as scoped by Section 1A.
+
+## 1A. Operational Scope
+
+The Operational Scope declared above states the only limit, if any, on
+Section 1's grant. Exactly one scope applies to this Software:
+
+Unconditional — Section 1's grant is unconditional: it includes
+running the Software, deploying it, integrating with it, and operating
+a product or service built on top of it, commercially or otherwise, at
+any scale, with no further condition.
 
 ## 2. Reserved Rights
 
@@ -31,8 +44,8 @@ except as Section 2A permits:
       service that is distributed, sold, or otherwise made available to
       third parties.
   (c) Using the Licensor's name, marks, or claims of compatibility
-      ("Custodly-compatible," "built on Custodly," etc.) in connection
-      with a distributed derivative.
+      ("Custodly-compatible," "built on Custodly," etc.) in
+      connection with a distributed derivative.
 
 ## 2A. Forks of Decentralized or Network Software
 
@@ -43,9 +56,9 @@ modified version, fork, or independent reimplementation of it —
 including to operate a competing network — provided the distributed
 work:
 
-  (i) prominently and accurately credits Custodly as the origin of the
-      Software or protocol, in its README, whitepaper, or equivalent
-      primary documentation; and
+  (i) prominently and accurately credits Custodly as the origin
+      of the Software or protocol, in its README, whitepaper, or
+      equivalent primary documentation; and
   (ii) keeps the canonical-source notice required by Section 7 intact.
 
 Distributing a fork that removes, obscures, or falsifies this
@@ -56,6 +69,19 @@ distributed product, and using the Licensor's name or marks to claim
 compatibility, still require a separate license regardless of
 attribution.
 
+## 2B. Reproducing This License Text
+
+The text of this license — this document itself, independent of any
+particular copy's Operational Scope, copyright holder, or project name —
+may be freely copied, reproduced, and adapted by anyone to license their own
+software, including verbatim reproduction in a project's own LICENSE file.
+This permission is not limited by Section 2(a) and applies regardless of
+Operational Scope: licensing your own software under this text is not
+"distributing the Software" of any other project that also uses it, and
+requires no separate permission from any Licensor who has used it. This
+section grants no right to any particular Licensor's Software — only to the
+legal text of this license itself.
+
 ## 3. Why "Usufruct"
 
 In civil law, a usufruct is the right to use property belonging to
@@ -65,9 +91,10 @@ full use, no transfer.
 
 ## 4. Contributions
 
-Contributions submitted to this repository are accepted under these same
-terms and are granted back to the copyright holder to the extent needed
-to keep this license enforceable across the whole codebase.
+Contributions submitted to a Software repository under this license are
+accepted under these same terms and are granted back to the Licensor to
+the extent necessary to keep this license enforceable across the
+combined work.
 
 ## 5. No Warranty
 
@@ -82,19 +109,21 @@ IN THE SOFTWARE.
 
 This is a source-available license, not an OSI-approved open source
 license. The Open Source Definition requires unrestricted redistribution
-rights, which Section 2 intentionally withholds. The source is public
-and free to use at any scale; only redistributing Custodly's own source
-requires a license.
+rights, which Section 2 intentionally withholds regardless of
+Operational Scope. Some Operational Scopes under Section 1A also
+withhold uses the Open Source Definition requires to be unrestricted.
+The source is public; which uses are free depends on the Operational
+Scope declared above.
 
 ## 7. Notice
 
 The canonical-source line at the top of this license text (or an
 equivalent pointer to https://github.com/estejosh/UFL-Usufruct-License)
 must be kept intact when this license text is copied into another
-project. This is a notice requirement on the license text itself, not a
-condition on using the Software — Section 1's grant is unconditional.
+project. This is a notice requirement on the license text itself, not
+an additional condition on using the Software beyond Section 1A.
 
 ---
 SPDX identifier: UFL is not on the official SPDX license list. Per SPDX
-convention for licenses outside that list, use `LicenseRef-UFL-1.1` —
-not a bare `UFL-1.1`, which would misrepresent it as SPDX-registered.
+convention for licenses outside that list, use `LicenseRef-UFL-2.1` —
+not a bare `UFL-2.1`, which would misrepresent it as SPDX-registered.

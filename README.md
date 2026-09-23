@@ -13,21 +13,31 @@ Threat model: `docs/THREAT-MODEL.md`
 
 ## Layout
 
-- `client/` — local client: talks to the vault (KeePassXC via
-  `keepassxc-cli`), exposes the request contract to n8n.
-- `workflows/` — n8n workflow exports. One per provider/track.
+- `crates/` — the Rust workspace. `custodly-core` (tiering model, the
+  `boundary/v1` contract with Ferryman, sealing), `custodly-vault`
+  (KeePassXC-backed vault client), `custodly-github` (Track 1 pilot: GitHub
+  App JWT signing + installation-token minting), `custodly-cli` (glues
+  them together; not an end-user surface, see `START-HERE.md`).
+- `client/vault/` — the actual `working.kdbx` database `custodly-vault`
+  reads and writes.
+- `workflows/` — n8n workflow exports. One per provider/track. Not built
+  yet — the CLI proves the pipeline first.
 - `recipes/` — Track 2 (dashboard-only provider) scripted acquisition
-  flows, agent-authored, machine-executed.
+  flows, agent-authored, machine-executed. Empty until Track 1 is live.
 - `docs/` — design brief, MVP scope, boundary contract, threat model.
 
-Status: scaffolding + docs only, no application code yet. KeePassXC
-install and vault creation are the current blocker — see mvp-scope.md.
+Status: the storage/policy/tiering layer and the Track 1 GitHub App
+minting pipeline are built and tested (`cargo test --workspace`), wired
+together end to end behind `custodly mint-github`. Not yet runnable for
+real — no GitHub App exists to mint against — and nothing here is called
+from n8n yet.
 
 ## License
 
-[![License: UFL-1.1](https://img.shields.io/badge/license-UFL--1.1-blue)](https://github.com/estejosh/UFL-Usufruct-License)
+[![License: UFL-2.1](https://img.shields.io/badge/license-UFL--2.1-blue)](https://github.com/estejosh/UFL-Usufruct-License)
 
-[The Usufruct License (UFL) v1.1](https://github.com/estejosh/UFL-Usufruct-License) —
-source-available, not OSI open source: free to use at any scale, license
+[The Usufruct License (UFL) v2.1](https://github.com/estejosh/UFL-Usufruct-License) —
+Operational Scope: Unconditional. Source-available, not OSI open source: free
+to use at any scale, license
 required only to redistribute a modified version or fold the source into
 another distributed product. Full terms in `LICENSE.md`.

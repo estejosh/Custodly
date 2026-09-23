@@ -10,7 +10,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-license = "LicenseRef-UFL-1.1"
+license = "LicenseRef-UFL-2.1"
 repository = "https://github.com/estejosh/Custodly"
 
 [workspace.dependencies]

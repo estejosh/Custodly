@@ -42,14 +42,25 @@ mechanism, stop - that work is done, consume it.
 
 ## Order of work
 
-1. `docs/BOUNDARY.md` - the line, plus the versioned interface.
-2. Answer the working-store password question, in `docs/THREAT-MODEL.md`.
-3. Unblock the vault: KeePassXC installed, `working.kdbx` and `master.kdbx`
-   created. Josh types both passwords. No agent ever sees either.
-4. `git init`, first commit, public remote.
-5. Then the GitHub App walking skeleton: request to sealed deposit, end to
-   end, one provider, no n8n yet. Prove the contract before building the
-   pipeline around it.
+1. DONE - `docs/BOUNDARY.md` - the line, plus the versioned interface.
+2. DONE - the working-store password question, in `docs/THREAT-MODEL.md`:
+   `working.kdbx` re-keyed to an OS-keystore-backed password 21 Sep 2026.
+3. PARTLY DONE - the vault: KeePassXC installed, `working.kdbx` created.
+   `master.kdbx` still does not exist - that, and the GitHub App creation
+   below, are the same sitting: Josh creates the App, downloads its
+   private key, creates `master.kdbx`, seals the key into it. No agent
+   ever sees either password.
+4. DONE - `git init`, first commit, public remote
+   (github.com/estejosh/Custodly). Note: the `crates/` Rust workspace sat
+   uncommitted on disk for two days after it was written - re-check
+   `git status` for untracked work before assuming "committed" means
+   "current."
+5. DONE, minus a live App to run it against - `custodly mint-github`:
+   mint an installation token, verify it's no broader than requested,
+   deposit it into `working.kdbx`. One provider, no n8n yet, exactly as
+   scoped. What's NOT done: it deposits straight into `working.kdbx`
+   locally, not through a sealed `deposit()` call to Ferryman - that's
+   still open, same as `client/`'s master-key question above.
 
 ## House rules
 
