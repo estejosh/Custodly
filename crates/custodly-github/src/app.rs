@@ -171,6 +171,18 @@ fn verify_no_scope_creep(
     granted: &BTreeMap<String, String>,
 ) -> Result<(), GithubError> {
     for (resource, granted_level) in granted {
+        // GitHub bakes `metadata: read` into every installation access
+        // token it issues, unconditionally -- there is no request shape
+        // that omits it and no way to opt out. Treating it as
+        // real-request-only scope creep would make every mint fail
+        // regardless of what was actually asked for, which is the
+        // opposite of what the quarantine is for. Nothing above
+        // `read` here is still creep: `verify_no_scope_creep` still
+        // rejects `metadata: write` if GitHub ever sent that, since
+        // that *would* be more than the documented baseline.
+        if resource == "metadata" && granted_level == "read" {
+            continue;
+        }
         let Some(requested_level) = requested.get(resource) else {
             return Err(GithubError::ScopeCreep {
                 requested: requested.clone(),
@@ -346,6 +358,26 @@ tQIDAQAB
     fn a_permission_not_requested_at_all_is_scope_creep() {
         let requested = perms(&[("contents", "read")]);
         let granted = perms(&[("contents", "read"), ("administration", "write")]);
+        assert!(matches!(
+            verify_no_scope_creep(&requested, &granted),
+            Err(GithubError::ScopeCreep { .. })
+        ));
+    }
+
+    #[test]
+    fn githubs_always_on_metadata_read_baseline_is_not_scope_creep() {
+        // What actually came back from a real mint against a live App
+        // (custodly-pilot, 2026-09-24): only `contents: read` was
+        // requested, but GitHub always adds `metadata: read` too.
+        let requested = perms(&[("contents", "read")]);
+        let granted = perms(&[("contents", "read"), ("metadata", "read")]);
+        assert!(verify_no_scope_creep(&requested, &granted).is_ok());
+    }
+
+    #[test]
+    fn metadata_write_is_still_scope_creep() {
+        let requested = perms(&[("contents", "read")]);
+        let granted = perms(&[("contents", "read"), ("metadata", "write")]);
         assert!(matches!(
             verify_no_scope_creep(&requested, &granted),
             Err(GithubError::ScopeCreep { .. })

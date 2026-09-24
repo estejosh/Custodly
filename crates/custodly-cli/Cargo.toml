@@ -22,6 +22,8 @@ tracing-subscriber = { workspace = true }
 axum = { workspace = true }
 chrono = { workspace = true }
 reqwest = { workspace = true }
+rand = { workspace = true }
+hex = { workspace = true }
 
 [lints]
 workspace = true

@@ -78,6 +78,26 @@ enum Command {
         cli_path: PathBuf,
         #[arg(long, env = "CUSTODLY_KEYRING_NAME", default_value = "custodly-working-vault")]
         keyring_name: String,
+        /// This credential is meant for someone other than the local
+        /// operator -- per docs/BOUNDARY.md, it must go through Ferryman's
+        /// deposit() rather than working.kdbx, which is a single-operator
+        /// local cache every agent on this box can read. Implies the
+        /// --ferryman-* flags are required even at tier 0/1; a tier 2
+        /// token requires them regardless of this flag.
+        #[arg(long)]
+        for_recipient: bool,
+        /// Ferryman's base URL, e.g. https://ferryman.example.com.
+        /// Required to deposit via boundary/v1 -- see docs/BOUNDARY.md for
+        /// when that's mandatory (tier 2, or --for-recipient).
+        #[arg(long, env = "CUSTODLY_FERRYMAN_BASE_URL")]
+        ferryman_base_url: Option<String>,
+        /// The Ferryman project id this token's deposit belongs to.
+        #[arg(long, env = "CUSTODLY_FERRYMAN_PROJECT")]
+        ferryman_project: Option<String>,
+        /// The project's own Ferryman bearer token. Never a flag value
+        /// you'd want in shell history in practice -- prefer the env var.
+        #[arg(long, env = "CUSTODLY_FERRYMAN_TOKEN")]
+        ferryman_token: Option<String>,
     },
 }
 
@@ -115,6 +135,10 @@ async fn main() -> anyhow::Result<()> {
             vault,
             cli_path,
             keyring_name,
+            for_recipient,
+            ferryman_base_url,
+            ferryman_project,
+            ferryman_token,
         }) => {
             let mut private_key_pem = String::new();
             std::io::stdin()
@@ -142,32 +166,97 @@ async fn main() -> anyhow::Result<()> {
                 "minted and verified installation token"
             );
 
-            let source_description =
-                format!("GitHub App installation token, app {app_id}, installation {installation_id}, {}", minted.scope_string);
-            let metadata = EntryMetadata::new(
-                "github",
-                project,
-                source_description,
-                AcquisitionSource::GithubAppInstallationToken,
-                chrono::Utc::now(),
-                Some(minted.expires_at),
-                minted.tier,
-            )?;
-            let entry = VaultEntry::new(label.clone(), metadata, minted.token);
-            let store = Vault::new(cli_path, vault, keyring_name);
-            store.put(&entry)?;
+            let tier_u8 = match minted.tier {
+                Tier::Tier0 => 0,
+                Tier::Tier1 => 1,
+                Tier::Tier2 => 2,
+            };
 
-            println!(
-                "deposited {}/{} (tier {}, expires {})",
-                entry.metadata.project,
-                label,
-                match entry.metadata.tier {
-                    Tier::Tier0 => 0,
-                    Tier::Tier1 => 1,
-                    Tier::Tier2 => 2,
-                },
-                entry.metadata.expires_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
-            );
+            // Per docs/BOUNDARY.md: deposit() is mandatory once a secret
+            // needs to leave the local machine -- any tier 2 grant, or any
+            // grant meant for someone other than the local operator.
+            let needs_ferryman_deposit = matches!(minted.tier, Tier::Tier2) || for_recipient;
+            if needs_ferryman_deposit {
+                let (base_url, ferryman_project, token) =
+                    match (ferryman_base_url, ferryman_project, ferryman_token) {
+                        (Some(b), Some(p), Some(t)) => (b, p, t),
+                        _ => anyhow::bail!(
+                            "this credential must leave the local machine (tier {tier_u8}\
+                             {}) but --ferryman-base-url/--ferryman-project/--ferryman-token \
+                             (or their env vars) were not all given -- see docs/BOUNDARY.md",
+                            if for_recipient { ", --for-recipient" } else { "" }
+                        ),
+                    };
+                let deposit_metadata = custodly_core::DepositMetadata {
+                    project: project.clone(),
+                    provider: "github".into(),
+                    scope: minted.scope_string.clone(),
+                    tier: tier_u8,
+                    acquired_via: custodly_core::AcquiredVia::Track1Api,
+                    acquired_at: chrono::Utc::now(),
+                    expires_at: Some(minted.expires_at),
+                    label: label.clone(),
+                };
+                let ingestion_key_hex =
+                    custodly_core::client::fetch_ingestion_key(&base_url, &ferryman_project, &token)
+                        .await?;
+                let aad = custodly_core::deposit_aad(&ferryman_project);
+                let sealed = custodly_core::seal_for_ingestion(&ingestion_key_hex, &aad, &minted.token)?;
+                let mut deposit_id_bytes = [0_u8; 8];
+                rand::Rng::fill_bytes(&mut rand::rng(), &mut deposit_id_bytes);
+                let deposit_id = format!(
+                    "{}-{}",
+                    chrono::Utc::now().format("%Y%m%dT%H%M%SZ"),
+                    hex::encode(deposit_id_bytes)
+                );
+                let receipt = custodly_core::client::deposit(
+                    &base_url,
+                    &ferryman_project,
+                    &token,
+                    deposit_id,
+                    sealed,
+                    deposit_metadata,
+                )
+                .await?;
+                tracing::info!(deposit_id = %receipt.deposit_id, "deposited with Ferryman");
+                println!(
+                    "deposited with Ferryman: {} (tier {tier_u8}, accepted {})",
+                    receipt.deposit_id,
+                    receipt.accepted_at.to_rfc3339(),
+                );
+            }
+
+            // working.kdbx is a single-operator local cache (docs/BOUNDARY.md)
+            // -- every agent on this box reads it freely, so a credential
+            // meant for someone else never lands here, deposited or not.
+            if for_recipient {
+                println!(
+                    "not cached locally (--for-recipient): delivery is Ferryman's job from here"
+                );
+            } else {
+                let source_description = format!(
+                    "GitHub App installation token, app {app_id}, installation {installation_id}, {}",
+                    minted.scope_string
+                );
+                let metadata = EntryMetadata::new(
+                    "github",
+                    project,
+                    source_description,
+                    AcquisitionSource::GithubAppInstallationToken,
+                    chrono::Utc::now(),
+                    Some(minted.expires_at),
+                    minted.tier,
+                )?;
+                let entry = VaultEntry::new(label.clone(), metadata, minted.token);
+                let store = Vault::new(cli_path, vault, keyring_name);
+                store.put(&entry)?;
+                println!(
+                    "cached locally: {}/{} (tier {tier_u8}, expires {})",
+                    entry.metadata.project,
+                    label,
+                    entry.metadata.expires_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
+                );
+            }
             Ok(())
         }
         None => {

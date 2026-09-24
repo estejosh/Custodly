@@ -52,6 +52,24 @@ use crate::contract::SealedSecret;
 /// what using a different value here actually breaks.
 const HKDF_INFO: &str = "ferryman-secret/v1";
 
+/// This project's identity name for receiving Custodly deposits, on the
+/// Ferryman side -- `ferryman_channel::boundary::INGESTION_IDENTITY_NAME`,
+/// which that module keeps private (nothing else there needs to name it).
+/// Mirrored here, not imported, for the same reason the sealing
+/// construction above is mirrored rather than shared via a common crate.
+const INGESTION_IDENTITY_NAME: &str = "custodly-ingestion";
+
+/// Build the associated data a deposit's AEAD seal must be bound to, to
+/// match `ferryman_channel::boundary::deposit_aad(project_id)` byte for
+/// byte: contract version, ingestion identity name, project id, each
+/// newline-separated. Both sides must build this the same way for a given
+/// project or the deposit will not open -- see [`seal_for_ingestion`]'s
+/// docs.
+#[must_use]
+pub fn deposit_aad(project_id: &str) -> Vec<u8> {
+    format!("{}\n{INGESTION_IDENTITY_NAME}\n{project_id}", crate::CONTRACT_VERSION).into_bytes()
+}
+
 fn hex_decode_32(encoded: &str) -> Result<[u8; 32]> {
     let bytes = hex::decode(encoded).context("public key is not valid hex")?;
     bytes
@@ -195,6 +213,14 @@ mod tests {
         assert_ne!(first.ephemeral_public_hex, second.ephemeral_public_hex);
         assert_ne!(first.nonce_hex, second.nonce_hex);
         assert_ne!(first.ciphertext_hex, second.ciphertext_hex);
+    }
+
+    #[test]
+    fn deposit_aad_matches_ferrymans_format_byte_for_byte() {
+        // Literal string Ferryman's own `deposit_aad` test fixtures use
+        // (`ferryman-channel/src/boundary.rs`) -- if this ever drifts,
+        // deposits stop opening on the Ferryman side.
+        assert_eq!(deposit_aad("acme"), b"boundary/v1\ncustodly-ingestion\nacme");
     }
 
     #[test]

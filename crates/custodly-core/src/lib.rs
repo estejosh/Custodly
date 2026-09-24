@@ -25,5 +25,5 @@ pub use contract::{
     PolicyResponse, SealedSecret, check_version, CONTRACT_VERSION,
 };
 pub use entry::{AcquisitionSource, EntryMetadata, EntryMetadataError, SecretQuery, VaultEntry};
-pub use seal::seal_for_ingestion;
+pub use seal::{deposit_aad, seal_for_ingestion};
 pub use tier::{BlastRadius, FinancialExposure, Reversibility, ScopeAssessment, Tier, assess_github_scope};

@@ -496,6 +496,8 @@ dependencies = [
  "custodly-core",
  "custodly-github",
  "custodly-vault",
+ "hex",
+ "rand 0.10.3",
  "reqwest",
  "tokio",
  "tracing",
