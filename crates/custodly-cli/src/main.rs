@@ -20,7 +20,7 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use custodly_core::{AcquisitionSource, EntryMetadata, Tier, VaultEntry};
+use custodly_core::{AcquisitionSource, EntryMetadata, SecretQuery, Tier, VaultEntry};
 use custodly_github::{AppCredentials, RequestedGrant, mint_installation_token};
 use custodly_vault::Vault;
 
@@ -98,6 +98,30 @@ enum Command {
         /// you'd want in shell history in practice -- prefer the env var.
         #[arg(long, env = "CUSTODLY_FERRYMAN_TOKEN")]
         ferryman_token: Option<String>,
+    },
+    /// Git credential helper: implements the `git-credential-<name>`
+    /// protocol (https://git-scm.com/docs/git-credential) so a repo can
+    /// `git config credential.helper "!custodly git-credential ..."`
+    /// instead of holding a static PAT in `.env`. Only `get` does real
+    /// work -- it looks up `project`/`label` in the vault via the same
+    /// `Vault::get` every other reader uses (no separate read path) and
+    /// prints `username=x-access-token` / `password=<token>`. `store`
+    /// and `erase` (git calls these after a push succeeds/fails) are
+    /// no-ops: Custodly is the source of truth for this credential, not
+    /// git's own credential cache.
+    GitCredential {
+        /// `get`, `store`, or `erase` -- git passes this as argv[1].
+        action: String,
+        #[arg(long)]
+        project: String,
+        #[arg(long)]
+        label: String,
+        #[arg(long, env = "CUSTODLY_VAULT_PATH")]
+        vault: PathBuf,
+        #[arg(long, env = "CUSTODLY_KEEPASSXC_CLI", default_value = "C:\\Program Files\\KeePassXC\\keepassxc-cli.exe")]
+        cli_path: PathBuf,
+        #[arg(long, env = "CUSTODLY_KEYRING_NAME", default_value = "custodly-working-vault")]
+        keyring_name: String,
     },
 }
 
@@ -257,6 +281,23 @@ async fn main() -> anyhow::Result<()> {
                     entry.metadata.expires_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
                 );
             }
+            Ok(())
+        }
+        Some(Command::GitCredential { action, project, label, vault, cli_path, keyring_name }) => {
+            // Git feeds `get`/`store`/`erase` a key=value stdin block and
+            // expects it drained even when we don't use it (store/erase).
+            let mut ignored = String::new();
+            let _ = std::io::stdin().read_to_string(&mut ignored);
+
+            if action != "get" {
+                // store/erase: no-op, see the GitCredential doc comment.
+                return Ok(());
+            }
+
+            let store = Vault::new(cli_path, vault, keyring_name);
+            let entry = store.get(&SecretQuery::new(project, label))?;
+            println!("username=x-access-token");
+            println!("password={}", entry.secret);
             Ok(())
         }
         None => {
