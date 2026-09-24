@@ -55,12 +55,20 @@ mechanism, stop - that work is done, consume it.
    uncommitted on disk for two days after it was written - re-check
    `git status` for untracked work before assuming "committed" means
    "current."
-5. DONE, minus a live App to run it against - `custodly mint-github`:
-   mint an installation token, verify it's no broader than requested,
-   deposit it into `working.kdbx`. One provider, no n8n yet, exactly as
-   scoped. What's NOT done: it deposits straight into `working.kdbx`
-   locally, not through a sealed `deposit()` call to Ferryman - that's
-   still open, same as `client/`'s master-key question above.
+5. DONE, proven against a live App - `custodly mint-github`: mint an
+   installation token, verify it's no broader than requested, deposit it.
+   `custodly-pilot` (App ID 5061156, installed on `estejosh/Custodly`
+   only, `contents: read`) minted and verified for real 24 Sep 2026 -
+   the run caught and fixed a false-positive scope-creep quarantine
+   trip: GitHub always adds `metadata: read` to every installation
+   token regardless of what's requested, which the checker didn't yet
+   know to treat as baseline rather than creep. Tier 0/1 still deposits
+   straight into `working.kdbx` locally; tier 2, or anything explicitly
+   `--for-recipient`, now goes through a sealed `deposit()` call to
+   Ferryman's `boundary/v1` instead (`custodly-core::client` +
+   `custodly-core::seal::deposit_aad`), matching Ferryman's own
+   `ferryman-channel/src/boundary.rs` side, which was already built and
+   tested there. No n8n yet - still a CLI a human or an n8n node runs.
 
 ## House rules
 
