@@ -50,3 +50,11 @@ Josh wants a way to approve a Tier 2 request or authorize minting a new
 PAT from his phone (Telegram) rather than only from a keyboard in front
 of the machine. See `custodly-design.md` for status — until that exists,
 Tier 2 gates still require Josh at the machine.
+
+## Where this project lives
+- Code on beastly: `X:\ferry\repos\custodly`
+- Code on grouchly: not cloned there
+- Work in those copies and nowhere else. Any other checkout of this repo (for example X:\<name> directly on the drive) is retired and must not be edited.
+- Channel on beastly: `X:\ferry\comms\custodly-ferryman`
+- Channel on grouchly: none on grouchly
+- Find it from any machine with `ferry root show`. Scratch space is `X:\ferry\tmp` (beastly).
