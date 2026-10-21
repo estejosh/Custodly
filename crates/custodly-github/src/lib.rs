@@ -13,6 +13,8 @@
 //! stores a token without going through `verify_no_scope_creep` first,
 //! because there's no other way to produce a `MintedToken` at all.
 
+pub mod adapter;
 pub mod app;
 
+pub use adapter::GithubAdapter;
 pub use app::{AppCredentials, GithubError, MintedToken, RequestedGrant, mint_installation_token, mint_jwt};
