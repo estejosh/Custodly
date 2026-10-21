@@ -3,6 +3,11 @@ members = [
   "crates/custodly-core",
   "crates/custodly-vault",
   "crates/custodly-github",
+  "crates/custodly-codeberg",
+  "crates/custodly-openrouter",
+  "crates/custodly-deepseek",
+  "crates/custodly-portal",
+  "crates/custodly-intake",
   "crates/custodly-cli",
 ]
 resolver = "2"
@@ -35,6 +40,8 @@ chacha20poly1305 = "0.11"
 hkdf = "0.13"
 sha2 = "0.11"
 x25519-dalek = { version = "3", features = ["static_secrets"] }
+# Verifying the phone app's device signature on a deposit (custodly-intake).
+ed25519-dalek = "3.0"
 # `custodly-core::server` runs `policy()` (see `docs/BOUNDARY.md`) and
 # `custodly-core::client` calls Ferryman's `boundary/v1` routes -- same
 # versions Ferryman itself pins, so the two sides of one HTTP contract are
@@ -50,6 +57,15 @@ tokio = { version = "1.47", features = ["full"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tower = "0.5"
 http-body-util = "0.1"
+# custodly-core::adapter: ProviderAdapter needs dyn dispatch (a registry
+# of adapters keyed by provider name), which native async-fn-in-traits
+# doesn't support without hand-written boxed-future boilerplate --
+# async-trait is the standard, low-risk way to get both.
+async-trait = "0.1"
+# custodly-portal: builds OAuth authorize URLs and callback redirects --
+# a hand-rolled percent-encoder is a bug magnet (query-string edge cases)
+# for something this small and this common; not worth reinventing.
+urlencoding = "2.1"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

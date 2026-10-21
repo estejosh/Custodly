@@ -21,6 +21,7 @@ hex = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
 reqwest = { workspace = true }
+async-trait = { workspace = true }
 
 [dev-dependencies]
 tower = { workspace = true }

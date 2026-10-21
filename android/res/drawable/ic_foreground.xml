@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- vault door ring -->
+    <path android:fillColor="#2DD4BF" android:pathData="M54,26 a28,28 0 1,1 0,56 a28,28 0 1,1 0,-56 z" />
+    <path android:fillColor="#0B1B2E" android:pathData="M54,32 a22,22 0 1,1 0,44 a22,22 0 1,1 0,-44 z" />
+    <!-- keyhole -->
+    <path android:fillColor="#FBBF24" android:pathData="M54,43 a7,7 0 1,1 0,14 a7,7 0 1,1 0,-14 z" />
+    <path android:fillColor="#FBBF24" android:pathData="M51,55 L57,55 L59.5,69 L48.5,69 z" />
+</vector>

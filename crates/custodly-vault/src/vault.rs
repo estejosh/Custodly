@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use chrono::{DateTime, Utc};
-use custodly_core::{AcquisitionSource, EntryMetadata, SecretQuery, Tier, VaultEntry};
+use custodly_core::{AcquisitionSource, EntryMetadata, SecretQuery, Tier, VaultEntry, LOCAL_OWNER};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -154,6 +154,8 @@ fn encode_metadata(m: &EntryMetadata) -> String {
         AcquisitionSource::GithubAppInstallationToken => "github-app-installation-token".to_string(),
         AcquisitionSource::ManualEntry => "manual-entry".to_string(),
         AcquisitionSource::Migrated { found_at } => format!("migrated:{found_at}"),
+        AcquisitionSource::OwnerPortalOauth { provider } => format!("owner-portal-oauth:{provider}"),
+        AcquisitionSource::PhoneDeposit { device_id } => format!("phone-deposit:{device_id}"),
     };
     let tier = match m.tier {
         Tier::Tier0 => "0",
@@ -162,8 +164,9 @@ fn encode_metadata(m: &EntryMetadata) -> String {
     };
     let expires_at = m.expires_at.map(|t| t.to_rfc3339()).unwrap_or_default();
     format!(
-        "[custodly:metadata:v1]\nprovider={}\nproject={}\nsource_description={}\n\
+        "[custodly:metadata:v1]\nowner={}\nprovider={}\nproject={}\nsource_description={}\n\
          acquired_via={}\nacquired_at={}\nexpires_at={}\ntier={}",
+        m.owner,
         m.provider,
         m.project,
         m.source_description,
@@ -191,6 +194,12 @@ fn decode_metadata(notes: &str) -> Option<EntryMetadata> {
         s if s.starts_with("migrated:") => AcquisitionSource::Migrated {
             found_at: s["migrated:".len()..].to_string(),
         },
+        s if s.starts_with("owner-portal-oauth:") => AcquisitionSource::OwnerPortalOauth {
+            provider: s["owner-portal-oauth:".len()..].to_string(),
+        },
+        s if s.starts_with("phone-deposit:") => AcquisitionSource::PhoneDeposit {
+            device_id: s["phone-deposit:".len()..].to_string(),
+        },
         _ => return None,
     };
     let tier = match fields.get("tier")?.as_str() {
@@ -205,7 +214,14 @@ fn decode_metadata(notes: &str) -> Option<EntryMetadata> {
         .filter(|s| !s.is_empty())
         .and_then(|s| s.parse().ok());
 
-    EntryMetadata::new(
+    // Missing `owner=` means this entry predates the multi-tenant
+    // restructure (24 Sep 2026 and earlier) -- default to `LOCAL_OWNER`
+    // so every pre-existing `working.kdbx` entry keeps decoding exactly
+    // as it did before `owner` existed at all.
+    let owner = fields.get("owner").cloned().unwrap_or_else(|| LOCAL_OWNER.to_string());
+
+    EntryMetadata::for_owner(
+        owner,
         fields.get("provider")?.clone(),
         fields.get("project")?.clone(),
         fields.get("source_description")?.clone(),
@@ -237,5 +253,36 @@ mod tests {
         let decoded = decode_metadata(&notes).expect("valid metadata block should decode");
         assert_eq!(decoded.project, m.project);
         assert_eq!(decoded.tier, m.tier);
+        assert_eq!(decoded.owner, LOCAL_OWNER);
+    }
+
+    #[test]
+    fn a_non_local_owner_and_owner_portal_oauth_source_both_round_trip() {
+        let m = EntryMetadata::for_owner(
+            "acme",
+            "slack",
+            "acme-support",
+            "Slack bot token via owner portal",
+            AcquisitionSource::OwnerPortalOauth { provider: "slack".to_string() },
+            Utc::now(),
+            None,
+            Tier::Tier1,
+        )
+        .unwrap();
+        let notes = encode_metadata(&m);
+        let decoded = decode_metadata(&notes).expect("valid metadata block should decode");
+        assert_eq!(decoded.owner, "acme");
+        assert_eq!(decoded.acquired_via, AcquisitionSource::OwnerPortalOauth { provider: "slack".to_string() });
+    }
+
+    #[test]
+    fn notes_written_before_the_owner_field_existed_still_decode_to_local_owner() {
+        // Exactly the shape this module wrote before `owner=` was added --
+        // no owner line at all.
+        let notes = "[custodly:metadata:v1]\nprovider=github\nproject=custodly\n\
+                      source_description=x\nacquired_via=manual-entry\n\
+                      acquired_at=2026-09-24T20:03:35Z\nexpires_at=\ntier=0";
+        let decoded = decode_metadata(notes).expect("pre-owner-field notes should still decode");
+        assert_eq!(decoded.owner, LOCAL_OWNER);
     }
 }

@@ -1,0 +1,20 @@
+[package]
+name = "custodly-codeberg"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Codeberg/Forgejo adapter -- repo-scoped access tokens via forgejo/forgejo#11504"
+
+[dependencies]
+custodly-core = { path = "../custodly-core" }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,5 @@
+# This directory is a Syncthing folder marker.
+# Do not delete.
+
+folderID: custodly-deposit
+created: 2026-10-08T14:31:01-06:00
