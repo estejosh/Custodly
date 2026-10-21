@@ -1,0 +1,18 @@
+{
+  "sync_dir": "X:\\Custodly\\client\\sync",
+  "state_dir": "X:\\Custodly\\client\\intake",
+  "vault_path": "X:\\Custodly\\client\\vault\\working.kdbx",
+  "keyring_name": "custodly-working-vault",
+  "intake_key_name": "default",
+  "projects": [
+    {
+      "id": "custodly",
+      "label": "Custodly",
+      "aliases": ["custody"],
+      "ferry_secret": { "workspace": "X:\\Custodly", "to": ["beastly"], "ferry_bin": "C:\\Users\\oshha\\AppData\\Local\\Ferryman\\bin\\ferry.exe" }
+    }
+  ],
+  "providers": [
+    { "id": "openrouter", "aliases": ["open router"], "parent_project": "openrouter", "parent_label": "management-key" }
+  ]
+}

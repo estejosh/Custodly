@@ -34,6 +34,29 @@ pub enum FinancialExposure {
     CanMoveMoney,
 }
 
+/// Did the provider's own API actually confirm what got granted, or is
+/// this just what was asked for? Added for the multi-provider
+/// restructure (25 Sep 2026): not every adapter has a verify-after-mint
+/// call the way GitHub's `verify_no_scope_creep` does (e.g. a provider
+/// with no read-back endpoint for a just-created key). A request this
+/// module has never confirmed the real scope of is exactly the
+/// "unrecognized scope" case the design brief already says to fail
+/// closed on -- so it scores the same way: as if it had the widest
+/// possible scope, not as whatever was merely requested.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Enforcement {
+    /// The provider's own API confirmed the actual granted scope is what
+    /// was requested (or narrower) -- GitHub's `verify_no_scope_creep`
+    /// against the mint response is the reference case.
+    Verified,
+    /// Minted (or about to be), but nothing confirmed the real scope --
+    /// no verify-after-mint call exists for this provider, or the
+    /// adapter hasn't implemented one. Forces Tier 2 regardless of the
+    /// other three axes; see [`Tier::score`].
+    Unverified,
+}
+
 /// The scoring inputs for one requested provider+scope grant.
 ///
 /// `read_only` is not one of the three axes `design-brief.md` names
@@ -52,6 +75,17 @@ pub struct ScopeAssessment {
     pub blast_radius: BlastRadius,
     pub financial_exposure: FinancialExposure,
     pub read_only: bool,
+    /// Defaults to `Verified` on deserialize so every `ScopeAssessment`
+    /// written before this field existed (there is no persisted form of
+    /// this type today, but tests and future callers may still construct
+    /// one without it) reads as the old, already-checked behavior rather
+    /// than silently downgrading to Tier 2.
+    #[serde(default = "default_enforcement")]
+    pub enforcement: Enforcement,
+}
+
+fn default_enforcement() -> Enforcement {
+    Enforcement::Verified
 }
 
 /// The gating decision for one requested grant.
@@ -89,7 +123,8 @@ impl Tier {
         let Some(assessment) = assessment else {
             return Tier::Tier2;
         };
-        let trips_tier2 = assessment.reversibility == Reversibility::Irreversible
+        let trips_tier2 = assessment.enforcement == Enforcement::Unverified
+            || assessment.reversibility == Reversibility::Irreversible
             || assessment.blast_radius == BlastRadius::Shared
             || assessment.financial_exposure == FinancialExposure::CanMoveMoney;
         if trips_tier2 {
@@ -180,6 +215,92 @@ pub fn assess_github_scope(scope: &str) -> Option<ScopeAssessment> {
             FinancialExposure::None
         },
         read_only,
+        // This function's caller is the GitHub App pilot's mint path,
+        // which always runs `verify_no_scope_creep` against the real
+        // mint response before a token is ever stored -- so a scope that
+        // got this far has already been checked, not merely requested.
+        enforcement: Enforcement::Verified,
+    })
+}
+
+/// Score a Codeberg/Forgejo repo-scoped access token's granted scopes
+/// (`"write:repository"`, `"read:issue"`, ... -- Forgejo's own
+/// `level:resource` vocabulary, the *reverse* order of GitHub's
+/// `resource:level`) into the axes [`Tier::score`] needs.
+///
+/// Confirmed 25 Sep 2026 (`forgejo/forgejo#11504`): a repo-scoped token
+/// can only carry `read:issue`, `write:issue`, `read:repository`, or
+/// `write:repository` -- so every scope this function accepts already
+/// stays within one repo's own issues/contents, never account-level
+/// administration or billing. `blast_radius` and `financial_exposure`
+/// are therefore fixed at `Own`/`None` for anything accepted at all; an
+/// unrecognized scope still fails closed to `None`, same instinct as
+/// [`assess_github_scope`].
+#[must_use]
+pub fn assess_codeberg_scope(scope: &str) -> Option<ScopeAssessment> {
+    if scope.trim().is_empty() {
+        return None;
+    }
+    let mut read_only = true;
+    for pair in scope.split(',') {
+        let (level, resource) = pair.trim().split_once(':')?;
+        let level = level.trim();
+        let resource = resource.trim();
+        if resource.is_empty() || level.is_empty() {
+            return None;
+        }
+        match level {
+            "read" => {}
+            "write" => read_only = false,
+            _ => return None,
+        }
+        match resource {
+            "issue" | "repository" => {}
+            _ => return None,
+        }
+    }
+    Some(ScopeAssessment {
+        reversibility: Reversibility::Reversible,
+        blast_radius: BlastRadius::Own,
+        financial_exposure: FinancialExposure::None,
+        read_only,
+        // Same reasoning as `assess_github_scope`: this function's only
+        // caller is `custodly-github`'s Codeberg adapter's `verify`,
+        // which checks the granted repo against the request before ever
+        // calling this -- so a scope that got this far has already been
+        // checked, not merely requested.
+        enforcement: Enforcement::Verified,
+    })
+}
+
+/// Score an OpenRouter provisioning key's granted spend limit against
+/// what was requested, into the axes [`Tier::score`] needs.
+///
+/// Confirmed 25 Sep 2026 (`openrouter.ai/docs/features/provisioning-api-keys`):
+/// the provisioning API has no resource or model scoping at all -- a
+/// minted key reaches every model on the account. The only thing that
+/// narrows it is `limit`, so unlike [`assess_github_scope`]/
+/// [`assess_codeberg_scope`] this takes numbers, not a `resource:level`
+/// string, and it always scores `financial_exposure: CanMoveMoney` -- a
+/// spend-capable key still moves money up to its cap, which per this
+/// module's own definition of the axis ("can the action move money or
+/// create spend liability?") is enough to trip Tier 2 regardless of how
+/// tight the cap is. `granted_limit_usd` must be `Some`, positive, and no
+/// larger than `requested_limit_usd` -- an uncapped key (`None`) or one
+/// granted a looser cap than asked for fails closed to `None`, same
+/// instinct as an unrecognized GitHub scope.
+#[must_use]
+pub fn assess_openrouter_scope(requested_limit_usd: f64, granted_limit_usd: Option<f64>) -> Option<ScopeAssessment> {
+    let granted = granted_limit_usd?;
+    if granted <= 0.0 || granted > requested_limit_usd {
+        return None;
+    }
+    Some(ScopeAssessment {
+        reversibility: Reversibility::Reversible,
+        blast_radius: BlastRadius::Own,
+        financial_exposure: FinancialExposure::CanMoveMoney,
+        read_only: false,
+        enforcement: Enforcement::Verified,
     })
 }
 
@@ -193,6 +314,7 @@ mod tests {
             blast_radius: BlastRadius::Own,
             financial_exposure: FinancialExposure::None,
             read_only,
+            enforcement: Enforcement::Verified,
         }
     }
 
@@ -223,8 +345,19 @@ mod tests {
             blast_radius: BlastRadius::Shared,
             financial_exposure: FinancialExposure::CanMoveMoney,
             read_only: true,
+            enforcement: Enforcement::Verified,
         };
         assert_eq!(Tier::score(Some(&assessment)), Tier::Tier2);
+    }
+
+    #[test]
+    fn unverified_scope_is_tier_2_even_when_everything_else_is_narrow() {
+        // The multi-provider case this field exists for: an adapter
+        // minted something reversible/own/no-money/read-only by its own
+        // claim, but has no way to confirm that against the provider.
+        let mut a = reversible_own_no_money(true);
+        a.enforcement = Enforcement::Unverified;
+        assert_eq!(Tier::score(Some(&a)), Tier::Tier2);
     }
 
     #[test]
@@ -285,5 +418,65 @@ mod tests {
         assert!(assess_github_scope("").is_none());
         assert!(assess_github_scope("repo").is_none());
         assert!(assess_github_scope("repo:delete").is_none());
+    }
+
+    #[test]
+    fn codeberg_read_only_scope_is_tier_0() {
+        let assessment = assess_codeberg_scope("read:repository,read:issue").unwrap();
+        assert_eq!(Tier::score(Some(&assessment)), Tier::Tier0);
+    }
+
+    #[test]
+    fn codeberg_scope_with_a_write_is_tier_1_never_tier_2() {
+        // Unlike GitHub, a repo-scoped Codeberg token can never reach
+        // admin/billing at all (forgejo/forgejo#11504's own validation
+        // rule) -- a write here is always Tier 1, never Tier 2.
+        let assessment = assess_codeberg_scope("write:repository").unwrap();
+        assert_eq!(Tier::score(Some(&assessment)), Tier::Tier1);
+    }
+
+    #[test]
+    fn codeberg_scope_uses_level_colon_resource_the_reverse_of_github() {
+        // GitHub's order (resource:level) would parse as level="repository"
+        // here, which isn't "read"/"write" -- fails closed rather than
+        // silently accepting the wrong field order.
+        assert!(assess_codeberg_scope("repository:read").is_none());
+    }
+
+    #[test]
+    fn codeberg_unrecognized_resource_fails_closed() {
+        assert!(assess_codeberg_scope("write:organization").is_none());
+    }
+
+    #[test]
+    fn codeberg_empty_or_malformed_scope_fails_closed() {
+        assert!(assess_codeberg_scope("").is_none());
+        assert!(assess_codeberg_scope("repository").is_none());
+        assert!(assess_codeberg_scope("delete:repository").is_none());
+    }
+
+    #[test]
+    fn openrouter_a_capped_key_is_still_tier_2_on_financial_exposure_alone() {
+        // The point of this axis: even a tight, confirmed, revocable cap
+        // still moves money, so it's never Tier 0/1.
+        let assessment = assess_openrouter_scope(5.0, Some(5.0)).unwrap();
+        assert_eq!(assessment.financial_exposure, FinancialExposure::CanMoveMoney);
+        assert_eq!(Tier::score(Some(&assessment)), Tier::Tier2);
+    }
+
+    #[test]
+    fn openrouter_an_uncapped_key_fails_closed() {
+        assert!(assess_openrouter_scope(5.0, None).is_none());
+    }
+
+    #[test]
+    fn openrouter_a_looser_cap_than_requested_fails_closed() {
+        assert!(assess_openrouter_scope(5.0, Some(50.0)).is_none());
+    }
+
+    #[test]
+    fn openrouter_a_zero_or_negative_cap_fails_closed() {
+        assert!(assess_openrouter_scope(5.0, Some(0.0)).is_none());
+        assert!(assess_openrouter_scope(5.0, Some(-1.0)).is_none());
     }
 }

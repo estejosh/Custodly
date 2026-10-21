@@ -1,0 +1,20 @@
+[package]
+name = "custodly-deepseek"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "DeepSeek adapter (strategy 3: broker) -- manages proxy-grant records; the actual traffic-forwarding proxy is separate, unbuilt infrastructure"
+
+[dependencies]
+custodly-core = { path = "../custodly-core" }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+[lints]
+workspace = true
